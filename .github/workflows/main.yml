@@ -1,0 +1,57 @@
+name: Deploy to Ubuntu Server
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치에 푸시될 때 트리거
+
+jobs: #진행되는 잡에 대한 정보
+  build: # 진행되는 순서 - 빌드를 진행함
+    runs-on: ubuntu-latest #어느환경에서 실행할래? 개발 서버를 말함
+
+    steps: #다음 단계별로 진행
+    # 코드 체크아웃
+    - name: Checkout repository
+      uses: actions/checkout@v2  #깃 액션에서 라이브러리로 만들어져 있는 코드, 플러그인임, 깃허브 클론 작업
+
+    # JDK 21 설정
+    - name: Set up JDK 21
+      uses: actions/setup-java@v1
+      with:
+        java-version: '21'
+
+    - name: Build with Gradle
+      run: |   # 액션 대신에 리눅스 명령어 입력 가능   | 는 명령이 여러 줄이다.
+        chmod +x ./gradlew
+        ./gradlew build
+
+    - name: Set SSH key permissions #개인키 만드는 부분
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa    # 환경설정 변수명 SERVER_SSH_KEY <-- 이건 자유
+        chmod 600 ~/.ssh/id_rsa
+
+    - name: Add SSH key  #액션을 이용하여 개인키 만드는 부분
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SERVER_SSH_KEY }} 
+
+    - name: Add known_hosts
+      run: |
+        ssh-keyscan -t ed25519 3.34.96.24 >> ~/.ssh/known_hosts  # known_hosts에 서버 아이피에 관한것을 등록해주는 작업
+        #              알고리즘  운영서버 주소
+
+    #- name: 기존프로세스 종료 
+    #  run: |
+    #    kill -9 $(ps -ef | grep devops | grep -v grep | head -n 1 | awk '{print $2}') || true
+
+    - name: Deploy to Server
+      run: scp build/libs/*.jar ubuntu@3.34.96.24:~/
+
+
+    - name: Run SSH commands
+      run: |
+        ssh -i ~/.ssh/id_rsa ubuntu@3.34.96.24 << 'EOF'
+          pkill -f 'java -jar' || true
+          nohup java -jar ~/devops_step0-0.0.1-SNAPSHOT.jar > log.txt 2>&1 &
+        EOF
