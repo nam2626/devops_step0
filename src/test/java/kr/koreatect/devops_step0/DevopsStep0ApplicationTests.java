@@ -26,6 +26,7 @@ class DevopsStep0ApplicationTests {
 	@Test
 	void testAdd2() {
 		int result = add(10, 20);
-		assertEquals(20, result);
+		// assertEquals(20, result); 수정하면 자동 빌드 가능함
+		assertEquals(30, result);
 	}
 }
