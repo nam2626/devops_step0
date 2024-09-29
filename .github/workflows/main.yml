@@ -34,7 +34,7 @@ jobs: #진행되는 잡에 대한 정보
     - name: Add SSH key  #액션을 이용하여 개인키 만드는 부분
       uses: webfactory/ssh-agent@v0.5.3
       with:
-        ssh-private-key: ${{ secrets.SERVER_SSH_KEY }} 
+        ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}  #해당 깃허브 리파지토리 셋팅에서 secrets에 개발서버 개인키 등록
 
     - name: Add known_hosts
       run: |
